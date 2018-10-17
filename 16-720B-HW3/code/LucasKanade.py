@@ -3,19 +3,6 @@ import scipy.ndimage
 from scipy.interpolate import RectBivariateSpline
 import math
 
-def interpTemplate(a, rect):
-    l, t, r, b = rect
-    h, w = a.shape
-    xrange = np.arange(l, r - 1e-5, 1)
-    yrange = np.arange(t, b - 1e-5, 1)
-    yy, xx = np.meshgrid(yrange, xrange)
-    yy = yy.flatten()
-    xx = xx.flatten()
-    rbs = RectBivariateSpline(np.arange(0,h,dtype=np.int), np.arange(0,w,dtype=np.int), a)
-    z = rbs.ev(yy, xx)
-    return z
-
-
 def LucasKanade(It, It1, rect, p0=np.zeros(2)):
     # Input:
     #	It: template image
@@ -36,13 +23,21 @@ def LucasKanade(It, It1, rect, p0=np.zeros(2)):
     hh, ww = It1.shape
     xrange_int = np.arange(0, ww)
     yrange_int = np.arange(0, hh)
+
+    rbs_zt = RectBivariateSpline(yrange_int, xrange_int, It)
+    xrange = np.arange(l, l + w - 1e-5, 1)
+    yrange = np.arange(t, t + h - 1e-5, 1)
+    yy, xx = np.meshgrid(yrange, xrange)
+    yy = yy.flatten()
+    xx = xx.flatten()
+    zt = rbs_zt.ev(yy, xx)
     rbs_zi = RectBivariateSpline(yrange_int, xrange_int, It1)
     rbs_dx = RectBivariateSpline(yrange_int, xrange_int, dx)
     rbs_dy = RectBivariateSpline(yrange_int, xrange_int, dy)
 
     p = p0
-    dp = np.zeros(0, 0)
-
+    dp = np.zeros((0, 0))
+    tol = 0.1
     while True:
         xrange = np.arange(l + p[0], l + p[0] + w - 1e-5, 1)
         yrange = np.arange(t + p[1], t + p[1] + h - 1e-5, 1)
@@ -55,10 +50,12 @@ def LucasKanade(It, It1, rect, p0=np.zeros(2)):
         zdy = rbs_dy.ev(yy, xx)
 
         A = np.stack([zdx, zdy], axis=1)
-        b = zi - It
+        b = zt - zi
 
-        dp = np.linalg.inv(A.T @ A) @ A.T @ b
+        dp = np.linalg.inv(A.T.dot(A)).dot(A.T).dot(b)
+        p += dp
+        print ('p', p, 'dp', dp)
+        if np.linalg.norm(dp)<tol:
+            break
 
-        if dp ==
-
-    return dp
+    return p
