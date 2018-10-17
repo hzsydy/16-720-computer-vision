@@ -1,0 +1,12 @@
+*.pdf
+*.md
+*.txt
+*.zip
+*.tar
+__pycache__/
+.idea/
+*.npy
+*.npz
+data/
+result/
+results/
