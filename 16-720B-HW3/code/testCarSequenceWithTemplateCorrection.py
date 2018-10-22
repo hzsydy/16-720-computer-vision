@@ -56,6 +56,7 @@ def main():
                 template_idx = i + 1
             else:
                 template_idx = i
+            pn = pn_star
         else:
             template_idx = 1
 
