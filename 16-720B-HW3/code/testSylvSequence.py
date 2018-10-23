@@ -38,27 +38,30 @@ def main():
         h_rect_sb.set_width(ww)
         return [h_im, h_rect, h_template, h_rect_sb]
 
-    template_idx = 0
-
-
     rect_sb = rect.copy()
     rects_sb = np.zeros((n, 4))
     rects_sb[0] = rect_sb.copy()
+    template_idx = 0
     def animate(i):
+        nonlocal rect
         nonlocal template_idx
         print('frame', i)
-        rect = rects[template_idx]
         template = data[int(rect[1] + 0.5):int(rect[1] + 0.5 + hh + 1e-5),
                    int(rect[0] + 0.5):int(rect[0] + 0.5 + hh + 1e-5), i + 1]
         h_template.set_array(template)
         h_im.set_array(data[:, :, i])
-        p = rects[i, :2] - rects[template_idx, :2]
-        pn = LucasKanadeBasis(data[:, :, template_idx], data[:, :, i + 1], rects[template_idx], base, p)
+
+        p = LucasKanadeBasis(data[:, :, i], data[:, :, i + 1], rect, base)
+        rect[0::2] += p[0]
+        rect[1::2] += p[1]
+        rects[i] = rect.copy()
+        h_rect.set_xy((rect[0], rect[1]))
+
+        p = rects_sb[i, :2] - rects_sb[template_idx, :2]
+        pn = LucasKanade(data[:, :, template_idx], data[:, :, i + 1], rects_sb[template_idx], p)
         if i > 0:
-            pn += rects[template_idx, :2] - rects[0, :2]
-            print('pn', pn)
-            pn_star = LucasKanadeBasis(data[:, :, 0], data[:, :, i + 1], rects[0], base, pn)
-            print('pn_star', pn_star)
+            pn += rects_sb[template_idx, :2] - rects_sb[0, :2]
+            pn_star = LucasKanade(data[:, :, 0], data[:, :, i + 1], rects_sb[0], pn)
             if np.linalg.norm(pn_star - pn) < 1e-3:
                 template_idx = i + 1
             else:
@@ -66,17 +69,11 @@ def main():
             pn = pn_star
         else:
             template_idx = 1
-        print('final pn', pn)
-        rects[i + 1][0::2] = pn[0]
-        rects[i + 1][1::2] = pn[1]
-        rects[i + 1] += rects[0]
-        h_rect.set_xy((rects[i + 1, 0], rects[i + 1, 1]))
 
-        p = LucasKanade(data[:, :, i], data[:, :, i + 1], rect_sb)
-        rect_sb[0::2] += p[0]
-        rect_sb[1::2] += p[1]
-        rects_sb[i] = rect_sb.copy()
-        h_rect_sb.set_xy((rect_sb[0], rect_sb[1]))
+        rects_sb[i + 1][0::2] = pn[0]
+        rects_sb[i + 1][1::2] = pn[1]
+        rects_sb[i + 1] += rects_sb[0]
+        h_rect_sb.set_xy((rects_sb[i + 1, 0], rects_sb[i + 1, 1]))
 
         return [h_im, h_rect, h_template, h_rect_sb]
 

@@ -29,9 +29,18 @@ def LucasKanadeBasis(It, It1, rect, bases, p0=np.zeros(2)):
     xx = xx.flatten()
     zt = rbs_zt.ev(yy, xx)
 
-    nr_w = bases.shape[-1]
-    b = bases.reshape((-1,nr_w))
-    bbt = b@b.T
+    # hh, ww, nr_w = bases.shape
+    # xrange_int = np.arange(0, ww)
+    # yrange_int = np.arange(0, hh)
+    # yy, xx = np.meshgrid(yrange_int, xrange_int)
+    # yy = yy.flatten()
+    # xx = xx.flatten()
+    # Bc = np.zeros((hh*ww, nr_w))
+    # for i in range(nr_w):
+    #     rbs_bc = RectBivariateSpline(yrange_int, xrange_int, bases[:,:,i])
+    #     Bc[:, i] = rbs_zt.ev(yy, xx)
+    Bc = bases.reshape((-1, bases.shape[-1]))
+    bbt = Bc@Bc.T
 
     rbs_zi = RectBivariateSpline(yrange_int, xrange_int, It1)
     rbs_dx = RectBivariateSpline(yrange_int, xrange_int, dx)
@@ -39,7 +48,7 @@ def LucasKanadeBasis(It, It1, rect, bases, p0=np.zeros(2)):
 
     p = p0
     dp = np.zeros((0, 0))
-    tol = 0.1
+    tol = 0.01
     while True:
         xrange = np.arange(l + p[0], l + p[0] + w - 1e-5, 1)
         yrange = np.arange(t + p[1], t + p[1] + h - 1e-5, 1)
@@ -53,11 +62,12 @@ def LucasKanadeBasis(It, It1, rect, bases, p0=np.zeros(2)):
 
         A = np.stack([zdx, zdy], axis=1)
         b = zt - zi
+        b = b.reshape(-1, 1)
 
-        A = A-bbt@A
-        b = b-bbt@b
+        A = A-bbt.dot(A)
+        b = b-bbt.dot(b)
 
-        dp = np.linalg.inv(A.T.dot(A)).dot(A.T).dot(b)
+        dp = np.linalg.inv(A.T.dot(A)).dot(A.T).dot(b)[:,0]
         p += dp
         print('p', p, 'dp', dp)
         if np.linalg.norm(dp) < tol:

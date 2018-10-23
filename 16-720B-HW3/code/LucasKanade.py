@@ -37,7 +37,7 @@ def LucasKanade(It, It1, rect, p0=np.zeros(2)):
 
     p = p0
     dp = np.zeros((0, 0))
-    tol = 0.1
+    tol = 0.01
     while True:
         xrange = np.arange(l + p[0], l + p[0] + w - 1e-5, 1)
         yrange = np.arange(t + p[1], t + p[1] + h - 1e-5, 1)
