@@ -11,7 +11,7 @@ def InverseCompositionAffine(It, It1):
     #	M: the Affine warp matrix [2x3 numpy array]
 
     # put your implementation here
-    M = np.array([[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]])
+    M = np.array([[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0, 0, 1]])
 
     dx = scipy.ndimage.sobel(It, axis=1)
     dy = scipy.ndimage.sobel(It, axis=0)
@@ -48,8 +48,10 @@ def InverseCompositionAffine(It, It1):
     dp = np.zeros((6,))
     tol = 1e-2
     while True:
-        M[0, :] += dp[:3]
-        M[1, :] += dp[3:]
+        dm = np.array([[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0, 0, 1]])
+        dm[0, :] += dp[:3]
+        dm[1, :] += dp[3:]
+        M = M.dot(np.linalg.inv(dm))
 
         points_wrapped = M.dot(points.T).T
         idx_points_valid = (points_wrapped[:, 0] > 0) & (points_wrapped[:, 0] < ww - 1) \
@@ -62,10 +64,10 @@ def InverseCompositionAffine(It, It1):
         zi = rbs_zi.ev(yy_wrapped, xx_wrapped)
         zt = rbs_zt.ev(yy, xx)
         A = Aall[idx_points_valid, :]
-        b = zt - zi
+        b = zi-zt
 
         dp = np.linalg.inv(A.T.dot(A)).dot(A.T).dot(b)
         print('M', M, 'dp', dp)
         if np.linalg.norm(dp) < tol:
             break
-    return M
+    return M[:2,:]

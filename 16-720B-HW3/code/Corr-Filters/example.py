@@ -3,7 +3,8 @@ import matplotlib.pyplot as plt
 import matplotlib.colors as colors
 from matplotlib import animation
 import matplotlib.patches as patches
-
+from mpl_toolkits.mplot3d import Axes3D
+import scipy.ndimage
 
 img = np.load('lena.npy')
 
@@ -84,6 +85,24 @@ def animate(i):
                           Y.reshape(dsize), cmap=plt.get_cmap('coolwarm'))
 
         # Place your solution code for question 4.3 here
+
+        g0 = np.linalg.inv(0+X.dot(X.T)).dot(X).dot(Y).reshape(*dsize)
+        g1 = np.linalg.inv(1+X.dot(X.T)).dot(X).dot(Y).reshape(*dsize)
+
+        r0 = scipy.ndimage.correlate(img, g0)
+        r1 = scipy.ndimage.correlate(img, g1)
+
+        rsb0 = scipy.ndimage.convolve(img, g0)
+        rsb1 = scipy.ndimage.convolve(img, g1)
+
+        fig_response, (ax0, ax1) = plt.subplots(1, 2)
+        ax0.imshow(r0)
+        ax1.imshow(r1)
+
+
+        fig_response_sb, (axsb0, axsb1) = plt.subplots(1, 2)
+        axsb0.imshow(rsb0)
+        axsb1.imshow(rsb1)
         plt.show()
         return []
 
@@ -93,3 +112,6 @@ ani = animation.FuncAnimation(fig, animate, frames=N+1,
                               init_func=init, blit=True,
                               repeat=False, interval=10)
 plt.show()
+
+
+
