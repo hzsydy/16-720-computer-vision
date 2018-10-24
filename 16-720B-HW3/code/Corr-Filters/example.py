@@ -89,6 +89,11 @@ def animate(i):
         g0 = np.linalg.inv(0+X.dot(X.T)).dot(X).dot(Y).reshape(*dsize)
         g1 = np.linalg.inv(1+X.dot(X.T)).dot(X).dot(Y).reshape(*dsize)
 
+
+        fig_g, (axg0, axg1) = plt.subplots(1, 2)
+        axg0.imshow(g0)
+        axg1.imshow(g1)
+
         r0 = scipy.ndimage.correlate(img, g0)
         r1 = scipy.ndimage.correlate(img, g1)
 
