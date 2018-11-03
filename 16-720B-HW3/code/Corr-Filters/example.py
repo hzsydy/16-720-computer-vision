@@ -86,13 +86,13 @@ def animate(i):
 
         # Place your solution code for question 4.3 here
 
-        g0 = np.linalg.inv(0+X.dot(X.T)).dot(X).dot(Y).reshape(*dsize)
-        g1 = np.linalg.inv(1+X.dot(X.T)).dot(X).dot(Y).reshape(*dsize)
+        g0 = np.linalg.inv(0*np.diag([1]*N)+X.dot(X.T)).dot(X).dot(Y).reshape(*dsize)
+        g1 = np.linalg.inv(1*np.diag([1]*N)+X.dot(X.T)).dot(X).dot(Y).reshape(*dsize)
 
 
         fig_g, (axg0, axg1) = plt.subplots(1, 2)
-        axg0.imshow(g0)
-        axg1.imshow(g1)
+        axg0.imshow(g0, cmap='gray')
+        axg1.imshow(g1, cmap='gray')
 
         r0 = scipy.ndimage.correlate(img, g0)
         r1 = scipy.ndimage.correlate(img, g1)
@@ -101,13 +101,13 @@ def animate(i):
         rsb1 = scipy.ndimage.convolve(img, g1)
 
         fig_response, (ax0, ax1) = plt.subplots(1, 2)
-        ax0.imshow(r0)
-        ax1.imshow(r1)
+        ax0.imshow(r0, cmap='gray')
+        ax1.imshow(r1, cmap='gray')
 
 
         fig_response_sb, (axsb0, axsb1) = plt.subplots(1, 2)
-        axsb0.imshow(rsb0)
-        axsb1.imshow(rsb1)
+        axsb0.imshow(rsb0, cmap='gray')
+        axsb1.imshow(rsb1, cmap='gray')
         plt.show()
         return []
 
