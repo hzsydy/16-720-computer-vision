@@ -6,8 +6,12 @@ Replace 'pass' by your implementation.
 # Insert your package here
 import numpy as np
 from helper import *
+from helper import _objective_F
 import cv2
 import sympy
+import matplotlib.pyplot as plt
+import math
+from mpl_toolkits.mplot3d import Axes3D
 
 '''
 Q2.1: Eight Point Algorithm
@@ -215,7 +219,18 @@ Q5.1: RANSAC method.
 
 def ransacF(pts1, pts2, M):
     # Replace pass by your implementation
-    pass
+    min_F = None
+    min_error = float('inf')
+    for i in range(5000):
+        F = sevenpoint(pts1, pts2, M)
+        num_points = pts1.shape[0]
+
+        error = _objective_F(F, pts1, pts2)
+        if min_error>error:
+            min_error = error
+            min_F = F
+
+    return min_F,
 
 
 '''
@@ -303,9 +318,45 @@ def main():
     #     except Exception:
     #         pass
     ### test 4.1
-    F = eightpoint(pts1, pts2, M)
-    np.savez('q4_1.npz', F=F, pts1=pts1, pts2=pts2)
-    epipolarMatchGUI(im1, im2, F)
+    # F = eightpoint(pts1, pts2, M)
+    # np.savez('q4_1.npz', F=F, pts1=pts1, pts2=pts2)
+    # epipolarMatchGUI(im1, im2, F)
+
+    ### test 4.2
+    #data = np.load('../data/templeCoords.npz')
+    #x1s = data['x1']
+    #y1s = data['y1']
+    #data = np.load('../data/intrinsics.npz')
+    #K1 = data['K1']
+    #K2 = data['K2']
+    #data = np.load('q3 3.npz')
+    #M2 = data['M2']
+    #C2 = data['C2']
+    #M1 = np.zeros((3, 4))
+    #M1[[0, 1, 2], [0, 1, 2]] = 1.
+    #C1 = K1.dot(M1)
+    #F = eightpoint(pts1, pts2, M)
+    #N = x1s.shape[0]
+    #p1 = np.zeros((N, 2), dtype=np.int)
+    #p2 = np.zeros((N, 2))
+    #p1[:, 0:1] = x1s
+    #p1[:, 1:2] = y1s
+    #for i, p in enumerate(p1):
+    #    x1, y1 = p
+    #    x2, y2 = epipolarCorrespondence(im1, im2, F, x1, y1)
+    #    p2[i] = x2, y2
+#
+    #np.savez('q4_2.npz', F=F, M1=M1, M2=M2, C1=C1, C2=C2)
+#
+    #P, err = triangulate(C1, p1, C2, p2)
+    #fig = plt.figure()
+    #ax = fig.add_subplot(111, projection='3d')
+    #ax.scatter(P[:, 0], P[:, 1], P[:, 2], s=1)
+    #ax.set_aspect(1)
+    #plt.show()
+
+    ### test 5.1
+
 
 
 if __name__ == '__main__':
