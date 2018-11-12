@@ -6,7 +6,6 @@ Replace 'pass' by your implementation.
 # Insert your package here
 import numpy as np
 from helper import *
-from helper import _objective_F
 import cv2
 import sympy
 import matplotlib.pyplot as plt
@@ -82,7 +81,7 @@ def sevenpoint(pts1, pts2, M):
         a = float(real)
         if abs(float(imagine)) < 1e-3:
             f = a * f1 + (1 - a) * f2
-            f = refineF(f, pts1_scaled, pts2_scaled)
+            # f = refineF(f, pts1_scaled, pts2_scaled)
             f = t.dot(f).dot(t)
             result.append(f)
 
@@ -219,18 +218,33 @@ Q5.1: RANSAC method.
 
 def ransacF(pts1, pts2, M):
     # Replace pass by your implementation
-    min_F = None
-    min_error = float('inf')
-    for i in range(5000):
-        F = sevenpoint(pts1, pts2, M)
-        num_points = pts1.shape[0]
+    num_points = pts1.shape[0]
+    print('num_points', num_points)
+    max_F = None
+    max_inlier = np.zeros((num_points,))
+    tilde1 = np.stack([pts1[:, 0], pts1[:, 1], np.ones_like(pts1[:, 0])], axis=1)
+    tilde2 = np.stack([pts2[:, 0], pts2[:, 1], np.ones_like(pts1[:, 0])], axis=1)
+    for i in range(300):
+        idx = np.random.randint(0, num_points, size=(7,))
+        Fs = sevenpoint(pts1[idx, :], pts2[idx, :], M)
 
-        error = _objective_F(F, pts1, pts2)
-        if min_error>error:
-            min_error = error
-            min_F = F
+        for F in Fs:
+            coeff = tilde1.dot(F.T)
+            a = coeff[:, 0]
+            b = coeff[:, 1]
+            c = coeff[:, 2]
+            dist = np.abs(a * pts2[:, 0] + b * pts2[:, 1] + c)
+            dist /= np.sqrt(a * a + b * b)
+            inlier = dist < 2
 
-    return min_F,
+            print('inliers {:6f}, max_inliers {:6f}'.format(
+                np.sum(inlier) / float(num_points),
+                np.sum(max_inlier) / float(num_points)))
+            if np.sum(max_inlier) < np.sum(inlier):
+                max_inlier = inlier
+                max_F = F
+    print('final inliers %', np.sum(max_inlier) / float(num_points))
+    return max_F, max_inlier
 
 
 '''
@@ -241,8 +255,20 @@ Q5.2: Rodrigues formula.
 
 
 def rodrigues(r):
-    # Replace pass by your implementation
-    pass
+    if np.alltrue(np.abs(r) < 1e-5):
+        return np.identity(3)
+    t = np.linalg.norm(r, ord=2)
+    u = r / t
+    k = np.zeros((3, 3))
+    k[1, 0] = u[2]
+    k[2, 0] = -u[1]
+    k[2, 1] = u[0]
+    k[0, 1] = -u[2]
+    k[0, 2] = u[1]
+    k[1, 2] = -u[0]
+    R = np.identity(3) + np.sin(t) * k + (1 - np.cos(t)) * k.dot(k)
+    # R = np.identity(3)*np.cos(t) + (1-np.cos(t))*u*u.T+k*np.sin(t)
+    return R
 
 
 '''
@@ -254,7 +280,36 @@ Q5.2: Inverse Rodrigues formula.
 
 def invRodrigues(R):
     # Replace pass by your implementation
-    pass
+    A = (R - R.T) / 2
+    rou = np.array([A[2, 1], A[0, 2], A[1, 0]])
+    s = np.linalg.norm(rou)
+    c = (R[0, 0] + R[1, 1] + R[2, 2] - 1) / 2.
+
+    if np.isclose(s, 0) and np.isclose(c, 1):
+        return np.array([0, 0, 0])
+    elif np.isclose(s, 0) and np.isclose(c, -1):
+        Z = R + np.identity(3)
+        for i in range(3):
+            if not np.isclose(Z[i, i], 0):
+                break
+        v = Z[:, i]
+        u = v / np.linalg.norm(v)
+        r = u * np.pi
+        if r[0] == 0:
+            if r[1] == 0 and r[2] < 0:
+                return -r
+            elif r[1] < 0:
+                return -r
+            else:
+                return r
+        elif r[0] < 0:
+            return -r
+        else:
+            return r
+    else:
+        u = rou / s
+        t = np.arctan2(s, c)
+        return u * t
 
 
 '''
@@ -270,8 +325,37 @@ Q5.3: Rodrigues residual.
 
 
 def rodriguesResidual(K1, M1, p1, K2, p2, x):
-    # Replace pass by your implementation
-    pass
+    P = x[:-6].reshape((-1, 3)).T
+    tildeP = np.concatenate([P, np.ones_like(P[:1, :])], axis=0)
+    r2 = x[-6:-3]
+    R2 = rodrigues(r2)
+    t2 = x[-3:]
+
+    M2 = np.zeros((3, 4))
+    M2[:, :3] = R2
+    M2[:, 3] = t2
+
+    n = p1.shape[0]
+    p1_hat = np.zeros((n, 2))
+    p2_hat = np.zeros((n, 2))
+
+    C1 = K1.dot(M1)
+    C2 = K2.dot(M2)
+
+    reproj = C1.dot(tildeP)
+    reproj /= reproj[-1]
+    p1_hat = reproj[:2, :].T.copy()
+    reproj = C2.dot(tildeP)
+    reproj /= reproj[-1]
+    p2_hat = reproj[:2, :].T.copy()
+
+    residuals = np.concatenate([(p1 - p1_hat).reshape([-1]),
+                                (p2 - p2_hat).reshape([-1])])
+
+    # print('P', P[:,:3])
+    # print('M2', M2)
+    # print('error', np.linalg.norm(residuals.reshape(-1, 2)))
+    return residuals
 
 
 '''
@@ -290,7 +374,29 @@ Q5.3 Bundle adjustment.
 
 def bundleAdjustment(K1, M1, p1, K2, M2_init, p2, P_init):
     # Replace pass by your implementation
-    pass
+
+    def func(x):
+        return (rodriguesResidual(K1, M1, p1, K2, p2, x) ** 2).sum()
+
+    R2_init = M2_init[:, :3]
+    t2_init = M2_init[:, 3]
+    r2_init = invRodrigues(R2_init)
+
+    x0 = np.concatenate([P_init.flatten(), r2_init.flatten(), t2_init.flatten()])
+    import scipy.optimize
+    ret = scipy.optimize.minimize(func, x0=x0)
+
+    ret = ret.x
+
+    P = ret[:-6].reshape((-1, 3))
+    r2 = ret[-6:-3]
+    t2 = ret[-3:]
+    R2 = rodrigues(r2)
+
+    M2 = np.zeros((3, 4))
+    M2[:, :3] = R2
+    M2[:, 3] = t2
+    return M2, P
 
 
 def main():
@@ -311,52 +417,128 @@ def main():
     # idx = np.random.randint(0, N, (7,))
     # fs = sevenpoint(pts1[idx,:], pts2[idx,:], M)
     # for f in fs:
-    #     try:
-    #         print(f)
-    #         np.savez('q2_2.npz', F=f, M=M)
-    #         displayEpipolarF(im1, im2, f)
-    #     except Exception:
-    #         pass
+    #    try:
+    #        print(f)
+    #        #np.savez('q2_2.npz', F=f, M=M)
+    #        displayEpipolarF(im1, im2, f)
+    #    except Exception:
+    #        pass
     ### test 4.1
     # F = eightpoint(pts1, pts2, M)
     # np.savez('q4_1.npz', F=F, pts1=pts1, pts2=pts2)
     # epipolarMatchGUI(im1, im2, F)
 
     ### test 4.2
-    #data = np.load('../data/templeCoords.npz')
-    #x1s = data['x1']
-    #y1s = data['y1']
-    #data = np.load('../data/intrinsics.npz')
-    #K1 = data['K1']
-    #K2 = data['K2']
-    #data = np.load('q3 3.npz')
-    #M2 = data['M2']
-    #C2 = data['C2']
-    #M1 = np.zeros((3, 4))
-    #M1[[0, 1, 2], [0, 1, 2]] = 1.
-    #C1 = K1.dot(M1)
-    #F = eightpoint(pts1, pts2, M)
-    #N = x1s.shape[0]
-    #p1 = np.zeros((N, 2), dtype=np.int)
-    #p2 = np.zeros((N, 2))
-    #p1[:, 0:1] = x1s
-    #p1[:, 1:2] = y1s
-    #for i, p in enumerate(p1):
+    # data = np.load('../data/templeCoords.npz')
+    # x1s = data['x1']
+    # y1s = data['y1']
+    # data = np.load('../data/intrinsics.npz')
+    # K1 = data['K1']
+    # K2 = data['K2']
+    # data = np.load('q3_3.npz')
+    # M2 = data['M2']
+    # C2 = data['C2']
+    # C1 = K1.dot(M1)
+    # F = eightpoint(pts1, pts2, M)
+    # N = x1s.shape[0]
+    # p1 = np.zeros((N, 2), dtype=np.int)
+    # p2 = np.zeros((N, 2))
+    # p1[:, 0:1] = x1s
+    # p1[:, 1:2] = y1s
+    # for i, p in enumerate(p1):
     #    x1, y1 = p
     #    x2, y2 = epipolarCorrespondence(im1, im2, F, x1, y1)
     #    p2[i] = x2, y2
-#
-    #np.savez('q4_2.npz', F=F, M1=M1, M2=M2, C1=C1, C2=C2)
-#
-    #P, err = triangulate(C1, p1, C2, p2)
-    #fig = plt.figure()
-    #ax = fig.add_subplot(111, projection='3d')
-    #ax.scatter(P[:, 0], P[:, 1], P[:, 2], s=1)
-    #ax.set_aspect(1)
-    #plt.show()
 
-    ### test 5.1
+    #
+    # np.savez('q4_2.npz', F=F, M1=M1, M2=M2, C1=C1, C2=C2)
+    #
+    # P, err = triangulate(C1, p1, C2, p2)
+    # fig = plt.figure()
+    # ax = fig.add_subplot(111, projection='3d')
+    # ax.scatter(P[:, 0], P[:, 1], P[:, 2], s=1)
+    # ax.set_aspect(1)
+    # plt.show()
 
+    ### test 5
+
+    data = np.load('../data/some_corresp_noisy.npz')
+    pts1 = data['pts1']
+    pts2 = data['pts2']
+    N = pts1.shape[0]
+    M = max(*im1.shape)
+    M1 = np.zeros((3, 4))
+    M1[[0, 1, 2], [0, 1, 2]] = 1.
+    M2 = np.zeros((3, 4))
+
+    data = np.load('../data/intrinsics.npz')
+    K1 = data['K1']
+    K2 = data['K2']
+
+    # F, inliers = ransacF(pts1, pts2, M)
+    # pts1 = pts1[inliers, :]
+    # pts2 = pts2[inliers, :]
+    # E = essentialMatrix(F, K1, K2)
+    #
+    M1 = np.zeros((3, 4))
+    M1[[0, 1, 2], [0, 1, 2]] = 1.
+    # M2s = camera2(E)
+    # min_failure_case = 100000000
+    # min_M2 = None
+    # for i in range(4):
+    #    M2 = M2s[:, :, i]
+    #    C1 = K1.dot(M1)
+    #    C2 = K2.dot(M2)
+    #    P, err = triangulate(C1, pts1, C2, pts2)
+    #    failure_case = np.sum(P[:, -1] < 0)
+    #    if failure_case < min_failure_case:
+    #        min_failure_case = failure_case
+    #        min_M2 = M2
+    # M2 = min_M2
+    #
+    # C1 = K1.dot(M1)
+    # C2 = K2.dot(M2)
+    # P_init, err = triangulate(C1, pts1, C2, pts2)
+    # print(M2)
+
+    # np.savez('5_3.npz', M2=M2, F=F, inliers=inliers, P_init=P_init)
+    data = np.load('5_3.npz')
+    M2_init = data['M2']
+    inliers = data['inliers']
+
+    pts1 = pts1[inliers, :]
+    pts2 = pts2[inliers, :]
+    C1 = K1.dot(M1)
+    C2 = K2.dot(M2_init)
+    P_init, err = triangulate(C1, pts1, C2, pts2)
+
+    R2_init = M2_init[:, :3]
+    t2_init = M2_init[:, 3]
+    r2_init = invRodrigues(R2_init)
+    x0 = np.concatenate([P_init.flatten(), r2_init, t2_init])
+    print('original error', np.linalg.norm(rodriguesResidual(K1, M1, pts1, K2, pts2, x0).reshape(-1, 2)))
+    M2, P = bundleAdjustment(K1, M1, pts1, K2, M2_init, pts2, P_init.flatten())
+    R2 = M2[:, :3]
+    t2 = M2[:, 3]
+    r2 = invRodrigues(R2)
+    x = np.concatenate([P.flatten(), r2, t2])
+    print('final error', np.linalg.norm(rodriguesResidual(K1, M1, pts1, K2, pts2, x).reshape(-1, 2)))
+
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+
+    # P_init_mean = P_init.mean(axis=0, keepdims=True)
+    # idx = np.linalg.norm(P_init - P_init_mean, axis=1) <
+    # ax.scatter(P_init[idx, 0], P_init[idx, 1], P_init[idx, 2], s=1, c='r')
+
+    # scale = P_init.mean(axis=0, keepdims=True) / P.mean(axis=0, keepdims=True)
+    # scale[2] = 1
+    # P /= scale
+
+    ax.scatter(P_init[:, 0], P_init[:, 1], P_init[:, 2], s=1, c='r')
+    ax.scatter(P[:, 0], P[:, 1], P[:, 2], s=1, c='g')
+    ax.set_aspect(1)
+    plt.show()
 
 
 if __name__ == '__main__':
