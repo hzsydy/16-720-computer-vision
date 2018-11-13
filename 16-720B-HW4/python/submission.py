@@ -429,36 +429,7 @@ def main():
     # epipolarMatchGUI(im1, im2, F)
 
     ### test 4.2
-    # data = np.load('../data/templeCoords.npz')
-    # x1s = data['x1']
-    # y1s = data['y1']
-    # data = np.load('../data/intrinsics.npz')
-    # K1 = data['K1']
-    # K2 = data['K2']
-    # data = np.load('q3_3.npz')
-    # M2 = data['M2']
-    # C2 = data['C2']
-    # C1 = K1.dot(M1)
-    # F = eightpoint(pts1, pts2, M)
-    # N = x1s.shape[0]
-    # p1 = np.zeros((N, 2), dtype=np.int)
-    # p2 = np.zeros((N, 2))
-    # p1[:, 0:1] = x1s
-    # p1[:, 1:2] = y1s
-    # for i, p in enumerate(p1):
-    #    x1, y1 = p
-    #    x2, y2 = epipolarCorrespondence(im1, im2, F, x1, y1)
-    #    p2[i] = x2, y2
-
-    #
-    # np.savez('q4_2.npz', F=F, M1=M1, M2=M2, C1=C1, C2=C2)
-    #
-    # P, err = triangulate(C1, p1, C2, p2)
-    # fig = plt.figure()
-    # ax = fig.add_subplot(111, projection='3d')
-    # ax.scatter(P[:, 0], P[:, 1], P[:, 2], s=1)
-    # ax.set_aspect(1)
-    # plt.show()
+    # see visualize.py
 
     ### test 5
 
@@ -517,24 +488,17 @@ def main():
     r2_init = invRodrigues(R2_init)
     x0 = np.concatenate([P_init.flatten(), r2_init, t2_init])
     print('original error', np.linalg.norm(rodriguesResidual(K1, M1, pts1, K2, pts2, x0).reshape(-1, 2)))
+    print('origin M', M2_init)
     M2, P = bundleAdjustment(K1, M1, pts1, K2, M2_init, pts2, P_init.flatten())
     R2 = M2[:, :3]
     t2 = M2[:, 3]
     r2 = invRodrigues(R2)
     x = np.concatenate([P.flatten(), r2, t2])
     print('final error', np.linalg.norm(rodriguesResidual(K1, M1, pts1, K2, pts2, x).reshape(-1, 2)))
+    print('final M', M2)
 
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
-
-    # P_init_mean = P_init.mean(axis=0, keepdims=True)
-    # idx = np.linalg.norm(P_init - P_init_mean, axis=1) <
-    # ax.scatter(P_init[idx, 0], P_init[idx, 1], P_init[idx, 2], s=1, c='r')
-
-    # scale = P_init.mean(axis=0, keepdims=True) / P.mean(axis=0, keepdims=True)
-    # scale[2] = 1
-    # P /= scale
-
     ax.scatter(P_init[:, 0], P_init[:, 1], P_init[:, 2], s=1, c='r')
     ax.scatter(P[:, 0], P[:, 1], P[:, 2], s=1, c='g')
     ax.set_aspect(1)
