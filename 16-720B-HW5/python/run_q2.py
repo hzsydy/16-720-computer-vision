@@ -88,16 +88,27 @@ for itr in range(max_iters):
     total_loss = 0
     avg_acc = 0
     for xb,yb in batches:
-        pass
         # forward
-
+        rb = forward(xb, params, name='layer1')
+        probs = forward(rb, params, name='output',activation=softmax)
         # loss
         # be sure to add loss and accuracy to epoch totals 
-
+        loss, acc = compute_loss_and_acc(yb, probs)
+        total_loss += loss
+        avg_acc = avg_acc*itr+acc
+        avg_acc /= (itr+1)
         # backward
-
+        # Implement backwards!
+        dy = probs.copy()
+        dy[np.arange(probs.shape[0]),yb.argmax(axis=1)] -= 1
+        db = backwards(dy, params, 'output', linear_deriv)
+        backwards(db, params, 'layer1', sigmoid_deriv)
         # apply gradient
-
+        params['Wlayer1'] = params['Wlayer1'] - learning_rate*params['grad_Wlayer1']
+        params['Woutput'] = params['Woutput'] - learning_rate*params['grad_Woutput']
+        params['blayer1'] = params['blayer1'] - learning_rate*params['grad_blayer1']
+        params['boutput'] = params['boutput'] - learning_rate*params['grad_boutput']
+        #print("itr: {:02d} \t loss: {:.2f} \t acc : {:.2f}".format(itr, loss, acc))
         
     if itr % 100 == 0:
         print("itr: {:02d} \t loss: {:.2f} \t acc : {:.2f}".format(itr,total_loss,avg_acc))
@@ -121,8 +132,35 @@ for k,v in params.items():
     #   run the network
     #   get the loss
     #   compute derivative with central diffs
-    
-    
+
+    eps = 1e-3
+    vshape = v.shape
+    v = v.flatten()
+    n = len(v)
+    delta = np.zeros((n,5,4))
+
+    for i in range(n):
+        v[i] += eps
+        params[k] = v.reshape(vshape)
+        rb = forward(xb, params, name='layer1')
+        y1 = forward(rb, params, name='output',activation=softmax)
+
+        v[i] -= 2*eps
+        params[k] = v.reshape(vshape)
+        rb = forward(xb, params, name='layer1')
+        y2 = forward(rb, params, name='output',activation=softmax)
+        v[i] += eps
+        params[k] = v.reshape(vshape)
+
+        delta[i] = (y1 - y2) / 2 / eps
+
+    rb = forward(xb, params, name='layer1')
+    probs = forward(rb, params, name='output',activation=softmax)
+    grad = np.einsum('knc,nc->kn',delta,probs-1)
+
+    params_orig['grad_'+k] = grad.sum(axis=1).reshape(vshape)
+
+
 
 total_error = 0
 for k in params.keys():
