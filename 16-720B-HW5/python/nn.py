@@ -71,7 +71,7 @@ def softmax(x):
 def compute_loss_and_acc(y, probs):
     loss, acc = None, None
     eps = 1e-6
-    loss = np.sum(-y*np.log(np.clip(probs, eps, 1-eps)))
+    loss = np.sum(-y.astype(np.float)*np.log(np.clip(probs, eps, 1-eps)))
     acc = np.mean(np.argmax(y, axis=1)==np.argmax(probs, axis=1).astype(np.float))
     return loss, acc
 

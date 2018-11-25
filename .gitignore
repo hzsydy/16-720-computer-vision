@@ -11,3 +11,5 @@ data/
 result/
 results/
 ydong2
+image/
+*.pickle
