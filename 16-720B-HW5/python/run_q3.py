@@ -10,6 +10,17 @@ valid_data = scipy.io.loadmat('../data/nist36_valid.mat')
 train_x, train_y = train_data['train_data'], train_data['train_labels']
 valid_x, valid_y = valid_data['valid_data'], valid_data['valid_labels']
 
+
+from mpl_toolkits.axes_grid1 import ImageGrid
+
+fig = plt.figure()
+grid1 = ImageGrid(fig, 121, nrows_ncols=(8, 8), axes_pad=0.1, cbar_mode='single')
+grid2 = ImageGrid(fig, 122, nrows_ncols=(8, 8), axes_pad=0.1, cbar_mode='single')
+for i in range(64):
+    grid1[i].imshow(train_x[int(10800*np.random.random()), :].reshape((32, 32)).T, cmap='gray')
+    grid2[i].imshow(train_x[int(10800*np.random.random()), :].reshape((32, 32)).T, cmap='gray')
+plt.show()
+
 max_iters = 50
 # pick a batch size, learning rate
 batch_size = 32
