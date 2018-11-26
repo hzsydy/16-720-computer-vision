@@ -13,22 +13,22 @@ valid_x = valid_data['valid_data']
 
 dim = 32
 # do PCA
+u, s, vh = np.linalg.svd(train_x)
+priciples = vh.T[:,:32]
 
-# rebuild a low-rank version
-lrank = None
-
-# rebuild it
-recon = None
-
-for i in range(5):
-    plt.subplot(2,1,1)
-    plt.imshow(train_x[i].reshape(32,32).T)
-    plt.subplot(2,1,2)
-    plt.imshow(recon[i].reshape(32,32).T)
-    plt.show()
 
 # build valid dataset
-recon_valid = None
+
+coeff = valid_x.dot(priciples)
+recon_valid = coeff.dot(priciples.T)
+
+idx = [100,400,800,1500,2200]
+for i in range(5):
+    plt.subplot(2, 5, i+1)
+    plt.imshow(valid_x[idx[i]].reshape(32, 32).T)
+    plt.subplot(2, 5, i+6)
+    plt.imshow(recon_valid[idx[i]].reshape(32, 32).T)
+plt.show()
 
 total = []
 for pred,gt in zip(recon_valid,valid_x):

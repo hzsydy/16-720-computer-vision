@@ -10,16 +10,15 @@ valid_data = scipy.io.loadmat('../data/nist36_valid.mat')
 train_x, train_y = train_data['train_data'], train_data['train_labels']
 valid_x, valid_y = valid_data['valid_data'], valid_data['valid_labels']
 
-
-from mpl_toolkits.axes_grid1 import ImageGrid
-
-fig = plt.figure()
-grid1 = ImageGrid(fig, 121, nrows_ncols=(8, 8), axes_pad=0.1, cbar_mode='single')
-grid2 = ImageGrid(fig, 122, nrows_ncols=(8, 8), axes_pad=0.1, cbar_mode='single')
-for i in range(64):
-    grid1[i].imshow(train_x[int(10800*np.random.random()), :].reshape((32, 32)).T, cmap='gray')
-    grid2[i].imshow(train_x[int(10800*np.random.random()), :].reshape((32, 32)).T, cmap='gray')
-plt.show()
+# from mpl_toolkits.axes_grid1 import ImageGrid
+#
+# fig = plt.figure()
+# grid1 = ImageGrid(fig, 121, nrows_ncols=(8, 8), axes_pad=0.1, cbar_mode='single')
+# grid2 = ImageGrid(fig, 122, nrows_ncols=(8, 8), axes_pad=0.1, cbar_mode='single')
+# for i in range(64):
+#     grid1[i].imshow(train_x[int(10800*np.random.random()), :].reshape((32, 32)).T, cmap='gray')
+#     grid2[i].imshow(train_x[int(10800*np.random.random()), :].reshape((32, 32)).T, cmap='gray')
+# plt.show()
 
 max_iters = 50
 # pick a batch size, learning rate
@@ -70,6 +69,7 @@ for itr in range(max_iters):
         params['bfc2'] = params['bfc2'] - learning_rate * params['grad_bfc2']
         # print("itr: {:02d} \t loss: {:.2f} \t acc : {:.2f}".format(itr, loss, acc))
     avg_acc_train /= batch_num
+    total_loss_train /= float(len(train_x))
     for xb, yb in batches_test:
         # forward
         rb = forward(xb, params, name='fc1')
@@ -77,7 +77,7 @@ for itr in range(max_iters):
         # loss
         # be sure to add loss and accuracy to epoch totals
         loss, acc = compute_loss_and_acc(yb, probs)
-        total_loss_test += loss
+        total_loss_test += loss/float(len(valid_x))
         avg_acc_test += acc / batch_num_test
     if itr % 2 == 0:
         print("itr: {:02d} \t train_loss: {:.2f} \t train_acc : {:.2f}\t test_loss {:.2f}\t test_acc {:.2f}".format(
@@ -92,23 +92,23 @@ with open('q3_weights.pickle', 'wb') as handle:
     pickle.dump(saved_params, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 # Q3.1.2
-# q312_data = np.array(q312_data)
-# fig = plt.figure()
-# ax = fig.add_subplot(121)
-# ax.set_xlabel('epoch')
-# ax.set_ylabel('accuracy')
-# h1 = ax.plot(q312_data[:, 0], q312_data[:, 2], color='r', label='Train')
-# h2 = ax.plot(q312_data[:, 0], q312_data[:, 4], color='g', label='Test')
-# ax.legend(handles=h1 + h2)
-# ax.set_title('Accuracy change by epoch')
-# ax = fig.add_subplot(122)
-# ax.set_xlabel('epoch')
-# ax.set_ylabel('loss')
-# h1 = ax.plot(q312_data[:, 0], q312_data[:, 1], color='r', label='Train')
-# h2 = ax.plot(q312_data[:, 0], q312_data[:, 3], color='g', label='Test')
-# ax.legend(handles=h1 + h2)
-# ax.set_title('Cross-entropy loss change by epoch')
-# plt.show()
+q312_data = np.array(q312_data)
+fig = plt.figure()
+ax = fig.add_subplot(121)
+ax.set_xlabel('epoch')
+ax.set_ylabel('accuracy')
+h1 = ax.plot(q312_data[:, 0], q312_data[:, 2], color='r', label='Train')
+h2 = ax.plot(q312_data[:, 0], q312_data[:, 4], color='g', label='Test')
+ax.legend(handles=h1 + h2)
+ax.set_title('Accuracy change by epoch')
+ax = fig.add_subplot(122)
+ax.set_xlabel('epoch')
+ax.set_ylabel('loss')
+h1 = ax.plot(q312_data[:, 0], q312_data[:, 1], color='r', label='Train')
+h2 = ax.plot(q312_data[:, 0], q312_data[:, 3], color='g', label='Test')
+ax.legend(handles=h1 + h2)
+ax.set_title('Cross-entropy loss change by epoch')
+plt.show()
 # Q3.1.3
 # from mpl_toolkits.axes_grid1 import ImageGrid
 #
@@ -120,7 +120,7 @@ with open('q3_weights.pickle', 'wb') as handle:
 #     grid2[i].imshow(rb_after[:, i].reshape((32, 32)), cmap='gray')
 # plt.show()
 
-#Q3.1.3
+# Q3.1.3
 confusion_matrix = np.zeros((train_y.shape[1], train_y.shape[1]))
 for xb, yb in batches:
     rb = forward(xb, params, name='fc1')
@@ -129,8 +129,6 @@ for xb, yb in batches:
     yb = yb.argmax(axis=1)
     for y, yp in zip(yb, yb_predict):
         confusion_matrix[int(y), int(yp)] += 1
-
-
 
 import string
 

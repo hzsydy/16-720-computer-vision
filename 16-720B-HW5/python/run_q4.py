@@ -81,7 +81,9 @@ for img in os.listdir('../images'):
         for j, bbox in enumerate(bbg):
             ymin, xmin, ymax, xmax = bbox
 
-            roi = 1 - bw[ymin:ymax + 1, xmin:xmax + 1].astype(np.float)
+            roi = bw[ymin:ymax + 1, xmin:xmax + 1].astype(np.float)
+            roi /= roi.max()
+            roi = 1-roi
             size = 6 * max(ymax - ymin, xmax - xmin) // 5
             dy = (size - ymax + ymin) // 2
             dx = (size - xmax + xmin) // 2
