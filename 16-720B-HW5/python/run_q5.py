@@ -28,7 +28,6 @@ initialize_weights(hidden_size, hidden_size, params, 'hidden')
 initialize_weights(hidden_size, hidden_size, params, 'hidden2')
 initialize_weights(hidden_size, 1024, params, 'output')
 
-
 losses = []
 # should look like your previous training loops
 for itr in range(max_iters):
@@ -47,7 +46,7 @@ for itr in range(max_iters):
         h3 = forward(h2, params, 'hidden2', relu)
         out = forward(h3, params, 'output', sigmoid)
 
-        loss = ((out - xb) ** 2).sum()/len(train_x)
+        loss = ((out - xb) ** 2).sum() / len(train_x)
         total_loss += loss
         grad = 2 * (out - xb)
         grad = backwards(grad, params, 'output', sigmoid_deriv)
@@ -68,6 +67,7 @@ for itr in range(max_iters):
     losses.append((total_loss))
 
 import matplotlib.pyplot as plt
+
 fig = plt.figure()
 ax = fig.add_subplot(111)
 ax.plot(range(max_iters), losses, 'g', marker='x')
@@ -78,19 +78,25 @@ plt.show()
 # Q5.3.1
 import matplotlib.pyplot as plt
 
-xb = valid_x[[100,400,800,1500,2200],:]
+xb = valid_x[[100, 101, 400, 401, 800, 801, 1500, 1501, 2200, 2201], :]
 h1 = forward(xb, params, 'layer1', relu)
 h2 = forward(h1, params, 'hidden', relu)
 h3 = forward(h2, params, 'hidden2', relu)
 out = forward(h3, params, 'output', sigmoid)
 for i in range(5):
-    plt.subplot(2, 5, i+1)
-    plt.imshow(xb[i].reshape(32, 32).T)
-    plt.subplot(2, 5, i+6)
-    plt.imshow(out[i].reshape(32, 32).T)
+    plt.subplot(4, 5, i + 1)
+    plt.imshow(xb[2*i].reshape(32, 32).T)
+    plt.subplot(4, 5, i + 6)
+    plt.imshow(out[2*i].reshape(32, 32).T)
+
+    plt.subplot(4, 5, i + 11)
+    plt.imshow(xb[2*i+1].reshape(32, 32).T)
+    plt.subplot(4, 5, i + 16)
+    plt.imshow(out[2*i+1].reshape(32, 32).T)
 plt.show()
 
 from skimage.measure import compare_psnr
+
 # evaluate PSNR
 # Q5.3.2
 total_psnr = 0
@@ -100,4 +106,4 @@ for x in valid_x:
     h3 = forward(h2, params, 'hidden2', relu)
     out = forward(h3, params, 'output', sigmoid)
     total_psnr += compare_psnr(x, out)
-print('psnr', total_psnr/len(valid_x))
+print('psnr', total_psnr / len(valid_x))

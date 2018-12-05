@@ -14,3 +14,8 @@ ydong2
 image/
 images/
 *.pickle
+big_hw/
+EMNIST/
+MNIST/
+scripts/
+*.pt

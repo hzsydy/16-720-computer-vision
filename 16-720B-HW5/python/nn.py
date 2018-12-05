@@ -68,13 +68,15 @@ def softmax(x):
 # compute total loss and accuracy
 # y is size [examples,classes]
 # probs is size [examples,classes]
-def compute_loss_and_acc(y, probs):
+def compute_loss_and_acc(y, probs, size_average=True):
     loss, acc = None, None
     eps = 1e-6
-    loss = np.sum(-y.astype(np.float)*np.log(np.clip(probs, eps, 1-eps)))
-    acc = np.mean(np.argmax(y, axis=1)==np.argmax(probs, axis=1).astype(np.float))
-    return loss, acc
-
+    loss = (-y.astype(np.float)*np.log(np.clip(probs, eps, 1-eps))).sum(axis=1)
+    acc = np.argmax(y, axis=1)==np.argmax(probs, axis=1).astype(np.float)
+    if not size_average:
+        return loss, acc
+    else:
+        return loss.sum(), acc.mean()
 
 # we give this to you
 # because you proved it

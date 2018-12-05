@@ -114,54 +114,58 @@ for itr in range(max_iters):
 # Q 2.5 should be implemented in this file
 # you can do this before or after training the network. 
 
-
 # save the old params
 import copy
 
+r = forward(x, params, 'layer1')
+probs = forward(r, params, 'output', softmax)
+dy = probs
+dy[np.arange(probs.shape[0]), np.argmax(y, axis=1)] -= 1
+dy = backwards(dy, params, 'output', linear_deriv)
+_ = backwards(dy, params, 'layer1', sigmoid_deriv)
+
 params_orig = copy.deepcopy(params)
-
 eps = 1e-6
+
 for k, v in params.items():
-    if '_' in k:
-        continue
-    # we have a real parameter!
-    # for each value inside the parameter
-    #   add epsilon
-    #   run the network
-    #   get the loss
-    #   compute derivative with central diffs
+    if '_' not in k:
+        # params = params_orig
+        if len(params[k].shape) == 2:
+            nr_chn_in, nr_chn_out = params[k].shape
+            for i in range(nr_chn_in):
+                for j in range(nr_chn_out):
+                    params[k][i, j] += eps
+                    r = forward(x, params, 'layer1')
+                    probs = forward(r, params, 'output', softmax)
+                    y1, _ = compute_loss_and_acc(y, probs)
 
-    eps = 1e-3
-    vshape = v.shape
-    vf = v.flatten().copy()
-    n = len(vf)
-    delta = np.zeros((n, 40, 4))
+                    params[k][i, j] -= 2 * eps
+                    r = forward(x, params, 'layer1')
+                    probs = forward(r, params, 'output', softmax)
+                    y2, _ = compute_loss_and_acc(y, probs)
 
+                    grad = (y1 - y2) / (2 * eps)
+                    # print(params[k].shape,params['grad_'+k].shape)
+                    params[k][i, j] += eps
 
-    for i in range(n):
-        vf[i] += eps
-        params_orig[k] = vf.reshape(vshape)
-        rb = forward(x, params_orig, name='layer1')
-        y1 = forward(rb, params_orig, name='output', activation=linear)
+                    params['grad_' + k][i, j] = grad
+        else:
+            nr_chn_out = params[k].shape
+            for i in range(nr_chn_out[0]):
+                params[k][i] += eps
+                r = forward(x, params, 'layer1')
+                probs = forward(r, params, 'output', softmax)
+                y1, _ = compute_loss_and_acc(y, probs)
 
-        vf[i] -= 2 * eps
-        params_orig[k] = vf.reshape(vshape)
-        rb = forward(x, params_orig, name='layer1')
-        y2 = forward(rb, params_orig, name='output', activation=linear)
-        vf[i] += eps
-        params_orig[k] = v.reshape(vshape)
+                params[k][i] -= 2 * eps
+                r = forward(x, params, 'layer1')
+                probs = forward(r, params, 'output', softmax)
+                y2, _ = compute_loss_and_acc(y, probs)
 
-        delta[i] = (y1 - y2) / 2 / eps
+                grad = (y1 - y2) / (2 * eps)
+                params[k][i] += eps
 
-    rb = forward(x, params, name='layer1')
-    probs = forward(rb, params, name='output', activation=softmax)
-    dy = probs.copy()
-    dy[np.arange(probs.shape[0]), y.argmax(axis=1)] -= 1
-
-    grad = np.einsum('knc,nc->kn', delta, dy)
-
-    params_orig['grad_' + k] = grad.sum(axis=1).reshape(vshape)
-
+                params['grad_' + k][i] = grad
 total_error = 0
 for k in params.keys():
     if 'grad_' in k:

@@ -22,12 +22,16 @@ priciples = vh.T[:,:32]
 coeff = valid_x.dot(priciples)
 recon_valid = coeff.dot(priciples.T)
 
-idx = [100,400,800,1500,2200]
+idx = [100, 101, 400, 401, 800, 801, 1500, 1501, 2200, 2201]
 for i in range(5):
-    plt.subplot(2, 5, i+1)
-    plt.imshow(valid_x[idx[i]].reshape(32, 32).T)
-    plt.subplot(2, 5, i+6)
-    plt.imshow(recon_valid[idx[i]].reshape(32, 32).T)
+    plt.subplot(4, 5, i+1)
+    plt.imshow(valid_x[idx[2*i]].reshape(32, 32).T)
+    plt.subplot(4, 5, i+6)
+    plt.imshow(recon_valid[idx[2*i]].reshape(32, 32).T)
+    plt.subplot(4, 5, i+11)
+    plt.imshow(valid_x[idx[2*i+1]].reshape(32, 32).T)
+    plt.subplot(4, 5, i+16)
+    plt.imshow(recon_valid[idx[2*i+1]].reshape(32, 32).T)
 plt.show()
 
 total = []
